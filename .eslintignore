@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Static files
+public/
+
+# Config files
+*.config.js
+*.config.mjs
+*.config.ts
+
+# Prisma generated
+prisma/generated/
+
+# Environment files
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Deployment
+.vercel/
+.netlify/
+
+# Testing
+coverage/
+
+# Misc
+*.log
+.DS_Store
