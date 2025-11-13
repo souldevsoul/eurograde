@@ -1,6 +1,6 @@
 /**
  * ESLint Plugin: Product Quality Rules for EUROGRADE
- * Technical vehicle assessment service - Brand integrity and code quality enforcement
+ * Luxury vehicle assessment service - Brand integrity and code quality enforcement
  */
 
 module.exports = {
@@ -10,23 +10,20 @@ module.exports = {
       meta: {
         type: 'problem',
         docs: {
-          description: 'Enforce only EUROGRADE brand colors: Deep Blue (#0E1B3D), Steel (#2B2F36), Technical Grey (#4A5568), Cool White (#F8FAFC)',
+          description: 'Enforce only EUROGRADE brand colors: Black (#111111), Gold (#D4AF37), Ivory (#FFFFF0)',
           category: 'Brand Integrity',
         },
         messages: {
-          invalidColor: 'Use only EUROGRADE brand colors: #0E1B3D (Deep Blue), #2B2F36 (Steel), #4A5568 (Technical Grey), #F8FAFC (Cool White). Found: {{color}}',
+          invalidColor: 'Use only EUROGRADE brand colors: #111111 (Black), #D4AF37 (Gold), #FFFFF0 (Ivory), #0A0A0A (Background), #1A1A1A (Surface). Found: {{color}}',
         },
       },
       create(context) {
         // Base colors
-        const DEEP_BLUE = [14, 27, 61]; // #0E1B3D
-        const STEEL = [43, 47, 54]; // #2B2F36
-        const TECH_GREY = [74, 85, 104]; // #4A5568
-        const COOL_WHITE = [248, 250, 252]; // #F8FAFC
-        const TEXT_PRIMARY = [26, 32, 44]; // #1A202C
-        const BORDER = [203, 213, 224]; // #CBD5E0
-        const WHITE = [255, 255, 255]; // #FFFFFF
-        const BLACK = [0, 0, 0]; // #000000
+                const WHITE = [255, 255, 255]; // #ffffff
+        const NAVY = [0, 51, 102]; // #003366
+        const STEEL = [108, 122, 137]; // #6c7a89
+        const LIGHT_GREY = [245, 245, 245]; // #f5f5f5
+        const DARK_GREY = [26, 26, 26]; // #1a1a1a // #FFFFFF
 
         const isColorMatch = (r, g, b, target, tolerance = 5) => {
           return Math.abs(r - target[0]) <= tolerance &&
@@ -45,9 +42,9 @@ module.exports = {
           if (hexMatch) {
             const hex = hexMatch[1].toLowerCase();
             if (hex.length === 3) {
-              return ['0e1', '2b2', '4a5', 'f8f', 'fff', '000'].includes(hex);
+              return ['111', 'd4a', 'fff'].includes(hex); // Note: #D4AF37 doesn't have a 3-char version
             }
-            return ['0e1b3d', '2b2f36', '4a5568', 'f8fafc', '1a202c', 'cbd5e0', 'ffffff', '000000'].includes(hex);
+            return ['ffffff', '003366', '6c7a89', 'f5f5f5', '1a1a1a'].includes(hex);
           }
 
           // Allow rgb/rgba colors with brand values
@@ -56,14 +53,13 @@ module.exports = {
             const r = parseInt(rgbaMatch[1], 10);
             const g = parseInt(rgbaMatch[2], 10);
             const b = parseInt(rgbaMatch[3], 10);
-            return isColorMatch(r, g, b, DEEP_BLUE) ||
-                   isColorMatch(r, g, b, STEEL) ||
-                   isColorMatch(r, g, b, TECH_GREY) ||
-                   isColorMatch(r, g, b, COOL_WHITE) ||
-                   isColorMatch(r, g, b, TEXT_PRIMARY) ||
-                   isColorMatch(r, g, b, BORDER) ||
+            return isColorMatch(r, g, b, BLACK) ||
+                   isColorMatch(r, g, b, GOLD) ||
+                   isColorMatch(r, g, b, IVORY) ||
+                   isColorMatch(r, g, b, BG_BLACK) ||
+                   isColorMatch(r, g, b, SURFACE) ||
                    isColorMatch(r, g, b, WHITE) ||
-                   isColorMatch(r, g, b, BLACK);
+                   (r === 0 && g === 0 && b === 0); // Black shadows
           }
 
           return false;
@@ -101,8 +97,9 @@ module.exports = {
           category: 'Brand Integrity',
         },
         messages: {
-          invalidCompanyName: 'Use consistent company name: "EUROGRADE". Found: {{name}}',
-          invalidEmail: 'Use official email: support@eurograde.eu. Found: {{email}}',
+          invalidCompanyName: 'Use consistent company name: "EUROGRADE" (English) or "" (Arabic). Found: {{name}}',
+          invalidEmail: 'Use official email: support@majaz.ae. Found: {{email}}',
+          invalidPhone: 'Use official UAE phone format: +971. Found: {{phone}}',
         },
       },
       create(context) {
@@ -122,9 +119,9 @@ module.exports = {
               }
 
               // Check for company name variations
-              const companyRegex = /\beurograde\b/i;
+              const companyRegex = /\b(majaz|)\b/i;
               if (companyRegex.test(value)) {
-                if (!/^EUROGRADE$/i.test(value.trim()) && value.length < 50) {
+                if (!/^(EUROGRADE|)$/.test(value.trim()) && value.length < 50) {
                   // Only flag if it's a short string (likely a brand mention)
                   const isInSentence = value.split(' ').length > 3;
                   if (!isInSentence) {
@@ -138,12 +135,22 @@ module.exports = {
               }
 
               // Check for email addresses
-              const emailRegex = /@eurograde\./i;
-              if (emailRegex.test(value) && !value.includes('support@eurograde.eu')) {
+              const emailRegex = /@majaz\./i;
+              if (emailRegex.test(value) && !value.includes('support@majaz.ae')) {
                 context.report({
                   node,
                   messageId: 'invalidEmail',
                   data: { email: value },
+                });
+              }
+
+              // Check for UAE phone numbers
+              const phoneRegex = /\+?\d{3}[\s-]?\d{2}[\s-]?\d{3}[\s-]?\d{4}/;
+              if (phoneRegex.test(value) && !value.includes('+971')) {
+                context.report({
+                  node,
+                  messageId: 'invalidPhone',
+                  data: { phone: value },
                 });
               }
             }
@@ -157,7 +164,7 @@ module.exports = {
       meta: {
         type: 'problem',
         docs: {
-          description: 'Verify all internal links exist in the routing structure',
+          description: 'Verify all internal links (/en/*, /ar/*) exist in the routing structure',
           category: 'Navigation',
         },
         messages: {
@@ -166,27 +173,29 @@ module.exports = {
       },
       create(context) {
         const KNOWN_ROUTES = [
-          '/',
-          '/contact',
-          '/about',
-          '/pricing',
-          '/packages',
-          '/faq',
-          '/terms',
-          '/login',
-          '/register',
-          '/dashboard',
-          '/profile',
-          '/requests',
-          '/messages',
-          '/checkout',
+          '/', '/en', '/ar',
+          '/en/contact', '/ar/contact',
+          '/en/about', '/ar/about',
+          '/en/pricing', '/ar/pricing',
+          '/en/packages', '/ar/packages',
+          '/en/faq', '/ar/faq',
+          '/en/terms', '/ar/terms',
+          '/en/login', '/ar/login',
+          '/en/register', '/ar/register',
+          '/en/dashboard', '/ar/dashboard',
+          '/en/profile', '/ar/profile',
+          '/en/requests', '/ar/requests',
+          '/en/messages', '/ar/messages',
+          '/en/what-we-offer', '/ar/what-we-offer',
+          '/en/interview', '/ar/interview',
+          '/en/checkout', '/ar/checkout',
         ];
 
         return {
           Literal(node) {
             if (typeof node.value === 'string') {
               const value = node.value;
-              if (value.startsWith('/') && !value.startsWith('//') && !value.startsWith('http')) {
+              if (value.startsWith('/en/') || value.startsWith('/ar/')) {
                 const basePath = value.split('?')[0].split('#')[0];
                 const isDynamic = basePath.includes('[') || basePath.includes(':');
 
@@ -195,7 +204,7 @@ module.exports = {
                     basePath.startsWith(route + '/')
                   );
 
-                  if (!isKnownPattern && basePath !== '/') {
+                  if (!isKnownPattern) {
                     context.report({
                       node,
                       messageId: 'brokenLink',
@@ -573,7 +582,74 @@ module.exports = {
       },
     },
 
-    // RULE 13: Consistent payment provider (Stripe only)
+    // RULE 13: No cross-project mentions
+    'no-cross-project-mentions': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description: 'Prevent mentions of other projects (AVTOCERT, BAKU DRIVE LAB, EUROGRADE, SANDVAULT, Boxcar)',
+          category: 'Brand Integrity',
+        },
+        messages: {
+          crossProjectMention: 'Cross-project mention detected: "{{mention}}". Each brand must maintain unique identity. Remove reference to {{project}}.',
+        },
+      },
+      create(context) {
+        const FORBIDDEN_MENTIONS = [
+          { pattern: /\bmajaz\b/i, name: 'MAJAZ' },
+          { pattern: /\bavtocert\b/i, name: 'AVTOCERT' },
+          { pattern: /\bbaku\b/i, name: 'BAKU' },
+          { pattern: /\bsandvault\b/i, name: 'SANDVAULT' },
+          { pattern: /\bboxcar\b/i, name: 'BOXCAR' }
+        ];
+
+        return {
+          Literal(node) {
+            if (typeof node.value === 'string' && node.value.length > 2) {
+              // Skip technical paths and imports
+              if (node.value.startsWith('/') ||
+                  node.value.startsWith('@/') ||
+                  node.value.includes('node_modules') ||
+                  node.value.includes('.tsx') ||
+                  node.value.includes('.jsx')) {
+                return;
+              }
+
+              FORBIDDEN_MENTIONS.forEach(({ pattern, name }) => {
+                if (pattern.test(node.value)) {
+                  context.report({
+                    node,
+                    messageId: 'crossProjectMention',
+                    data: {
+                      mention: node.value.slice(0, 100),
+                      project: name,
+                    },
+                  });
+                }
+              });
+            }
+          },
+          TemplateElement(node) {
+            if (node.value && node.value.raw) {
+              FORBIDDEN_MENTIONS.forEach(({ pattern, name }) => {
+                if (pattern.test(node.value.raw)) {
+                  context.report({
+                    node,
+                    messageId: 'crossProjectMention',
+                    data: {
+                      mention: node.value.raw.slice(0, 100),
+                      project: name,
+                    },
+                  });
+                }
+              });
+            }
+          },
+        };
+      },
+    },
+
+    // RULE 14: Consistent payment provider (Stripe only)
     'consistent-payment-providers': {
       meta: {
         type: 'problem',
